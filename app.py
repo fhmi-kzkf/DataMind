@@ -38,6 +38,317 @@ except ImportError:
 import warnings
 warnings.filterwarnings('ignore')
 
+# Sample dataset generators
+def generate_sample_dataset(dataset_type):
+    """Generate sample datasets dynamically for demo purposes"""
+    np.random.seed(42)  # For reproducibility
+    
+    if dataset_type == "sample_classification_data.csv":
+        # Loan Approval Dataset
+        n_samples = 200
+        
+        # Generate base features
+        age = np.random.normal(35, 10, n_samples).astype(int)
+        age = np.clip(age, 18, 70)
+        
+        income = np.random.normal(50000, 20000, n_samples)
+        income = np.clip(income, 20000, 120000)
+        
+        credit_score = np.random.normal(650, 100, n_samples).astype(int)
+        credit_score = np.clip(credit_score, 300, 850)
+        
+        employment_years = np.random.poisson(5, n_samples)
+        employment_years = np.clip(employment_years, 0, 30)
+        
+        debt_to_income = np.random.uniform(0.1, 0.8, n_samples)
+        
+        loan_amount = income * np.random.uniform(0.2, 2.0, n_samples)
+        
+        # Create loan approval based on logical rules with noise
+        approval_score = (
+            (credit_score - 300) / 550 * 0.4 +  # Credit score influence
+            (income - 20000) / 100000 * 0.3 +   # Income influence
+            (1 - debt_to_income) * 0.2 +        # Debt ratio influence
+            np.random.normal(0, 0.1, n_samples) # Random noise
+        )
+        
+        loan_approved = (approval_score > 0.5).astype(int)
+        
+        # Add categorical features
+        purposes = ['car', 'home', 'business', 'personal']
+        purpose = np.random.choice(purposes, n_samples)
+        
+        educations = ['high_school', 'bachelor', 'master', 'PhD']
+        education = np.random.choice(educations, n_samples)
+        
+        marital_status = np.random.choice(['single', 'married', 'divorced'], n_samples)
+        has_cosigner = np.random.choice(['yes', 'no'], n_samples)
+        
+        previous_defaults = np.random.poisson(0.3, n_samples)
+        previous_defaults = np.clip(previous_defaults, 0, 5)
+        
+        monthly_payment = loan_amount / np.random.uniform(12, 360, n_samples)
+        
+        # Create DataFrame
+        data = pd.DataFrame({
+            'loan_id': [f'L{str(i+1).zfill(3)}' for i in range(n_samples)],
+            'age': age,
+            'income': income,
+            'credit_score': credit_score,
+            'employment_years': employment_years,
+            'debt_to_income': debt_to_income,
+            'loan_amount': loan_amount,
+            'purpose': purpose,
+            'education': education,
+            'marital_status': marital_status,
+            'has_cosigner': has_cosigner,
+            'previous_defaults': previous_defaults,
+            'monthly_payment': monthly_payment,
+            'loan_approved': loan_approved
+        })
+        
+        # Add some missing values
+        missing_indices = np.random.choice(n_samples, size=int(n_samples * 0.05), replace=False)
+        data.loc[missing_indices[:len(missing_indices)//3], 'age'] = np.nan
+        data.loc[missing_indices[len(missing_indices)//3:2*len(missing_indices)//3], 'income'] = np.nan
+        data.loc[missing_indices[2*len(missing_indices)//3:], 'employment_years'] = np.nan
+        
+        return data
+        
+    elif dataset_type == "sample_regression_data.csv":
+        # Real Estate Price Dataset
+        n_samples = 200
+        
+        # Generate features
+        size_sqft = np.random.normal(2000, 800, n_samples)
+        size_sqft = np.clip(size_sqft, 500, 5000)
+        
+        bedrooms = np.random.choice([1, 2, 3, 4, 5], n_samples, p=[0.1, 0.2, 0.4, 0.25, 0.05])
+        bathrooms = bedrooms * np.random.uniform(0.5, 1.5, n_samples)
+        bathrooms = np.clip(bathrooms, 1, 6)
+        
+        age_years = np.random.exponential(15, n_samples).astype(int)
+        age_years = np.clip(age_years, 0, 60)
+        
+        locations = ['downtown', 'suburb', 'urban', 'rural']
+        location = np.random.choice(locations, n_samples, p=[0.2, 0.4, 0.3, 0.1])
+        
+        garage = np.random.choice(['yes', 'no'], n_samples, p=[0.7, 0.3])
+        pool = np.random.choice(['yes', 'no'], n_samples, p=[0.3, 0.7])
+        garden = np.random.choice(['large', 'medium', 'small', 'none'], n_samples, p=[0.2, 0.3, 0.3, 0.2])
+        
+        neighborhood_score = np.random.uniform(3, 10, n_samples)
+        crime_rate = np.random.uniform(0.001, 0.05, n_samples)
+        school_rating = np.random.randint(3, 11, n_samples)
+        distance_to_city = np.random.uniform(1, 50, n_samples)
+        
+        public_transport = np.random.choice(['excellent', 'good', 'fair', 'poor'], n_samples, p=[0.2, 0.3, 0.3, 0.2])
+        property_type = np.random.choice(['house', 'apartment'], n_samples, p=[0.6, 0.4])
+        condition = np.random.choice(['excellent', 'good', 'fair', 'poor'], n_samples, p=[0.2, 0.4, 0.3, 0.1])
+        
+        # Calculate price based on features with realistic relationships
+        base_price = (
+            size_sqft * 150 +  # Price per sqft
+            bedrooms * 20000 +  # Bedroom premium
+            bathrooms * 15000 +  # Bathroom premium
+            neighborhood_score * 8000 +  # Neighborhood premium
+            school_rating * 5000 +  # School premium
+            -age_years * 2000 +  # Age depreciation
+            -distance_to_city * 1000 +  # Distance penalty
+            -crime_rate * 1000000  # Crime penalty
+        )
+        
+        # Add location multipliers
+        location_multiplier = {'downtown': 1.3, 'suburb': 1.1, 'urban': 1.0, 'rural': 0.8}
+        price = base_price * [location_multiplier[loc] for loc in location]
+        
+        # Add bonuses for features
+        price += (garage == 'yes') * 25000
+        price += (pool == 'yes') * 30000
+        price += np.random.normal(0, 50000, n_samples)  # Random noise
+        price = np.clip(price, 80000, 1000000)
+        
+        # Create DataFrame
+        data = pd.DataFrame({
+            'property_id': [f'P{str(i+1).zfill(3)}' for i in range(n_samples)],
+            'location': location,
+            'size_sqft': size_sqft.astype(int),
+            'bedrooms': bedrooms,
+            'bathrooms': bathrooms.round(1),
+            'age_years': age_years,
+            'garage': garage,
+            'pool': pool,
+            'garden': garden,
+            'neighborhood_score': neighborhood_score.round(1),
+            'crime_rate': crime_rate.round(3),
+            'school_rating': school_rating,
+            'distance_to_city': distance_to_city.round(1),
+            'public_transport': public_transport,
+            'property_type': property_type,
+            'condition': condition,
+            'price': price.astype(int)
+        })
+        
+        # Add some missing values
+        missing_indices = np.random.choice(n_samples, size=int(n_samples * 0.08), replace=False)
+        data.loc[missing_indices[:len(missing_indices)//4], 'location'] = np.nan
+        data.loc[missing_indices[len(missing_indices)//4:len(missing_indices)//2], 'bedrooms'] = np.nan
+        data.loc[missing_indices[len(missing_indices)//2:3*len(missing_indices)//4], 'size_sqft'] = np.nan
+        data.loc[missing_indices[3*len(missing_indices)//4:], 'age_years'] = np.nan
+        
+        return data
+        
+    elif dataset_type == "sample_clustering_data.csv":
+        # Customer Segmentation Dataset
+        n_samples = 200
+        
+        # Generate customer segments
+        segments = ['budget_conscious', 'premium_buyer', 'tech_enthusiast', 'family_oriented']
+        customer_segment = np.random.choice(segments, n_samples)
+        
+        # Generate features based on segments
+        age = np.random.normal(35, 12, n_samples).astype(int)
+        age = np.clip(age, 18, 75)
+        
+        # Income based on segments
+        income_base = {'budget_conscious': 35000, 'premium_buyer': 85000, 'tech_enthusiast': 65000, 'family_oriented': 55000}
+        income = [np.random.normal(income_base[seg], 15000) for seg in customer_segment]
+        income = np.clip(income, 20000, 150000)
+        
+        # Spending patterns based on segments
+        spending_electronics = np.random.uniform(200, 5000, n_samples)
+        spending_clothing = np.random.uniform(100, 3000, n_samples)
+        spending_groceries = np.random.uniform(300, 1500, n_samples)
+        spending_entertainment = np.random.uniform(50, 1200, n_samples)
+        spending_health = np.random.uniform(100, 1000, n_samples)
+        spending_travel = np.random.uniform(200, 6000, n_samples)
+        
+        online_activity_hours = np.random.uniform(5, 50, n_samples)
+        social_media_usage = np.random.uniform(1, 20, n_samples)
+        brand_loyalty_score = np.random.uniform(3, 10, n_samples)
+        purchase_frequency = np.random.poisson(15, n_samples)
+        
+        seasonal_preference = np.random.choice(['Spring', 'Summer', 'Fall', 'Winter'], n_samples)
+        payment_method = np.random.choice(['Credit Card', 'Debit Card', 'Cash'], n_samples, p=[0.6, 0.3, 0.1])
+        region = np.random.choice(['North', 'South', 'East', 'West'], n_samples)
+        
+        # Create DataFrame
+        data = pd.DataFrame({
+            'customer_id': [3000 + i + 1 for i in range(n_samples)],
+            'age': age,
+            'income': income,
+            'spending_electronics': spending_electronics.astype(int),
+            'spending_clothing': spending_clothing.astype(int),
+            'spending_groceries': spending_groceries.astype(int),
+            'spending_entertainment': spending_entertainment.astype(int),
+            'spending_health': spending_health.astype(int),
+            'spending_travel': spending_travel.astype(int),
+            'online_activity_hours': online_activity_hours.astype(int),
+            'social_media_usage': social_media_usage.astype(int),
+            'brand_loyalty_score': brand_loyalty_score.round(1),
+            'purchase_frequency': purchase_frequency,
+            'seasonal_preference': seasonal_preference,
+            'payment_method': payment_method,
+            'region': region
+        })
+        
+        # Add some missing values
+        missing_indices = np.random.choice(n_samples, size=int(n_samples * 0.06), replace=False)
+        data.loc[missing_indices[:len(missing_indices)//3], 'age'] = np.nan
+        data.loc[missing_indices[len(missing_indices)//3:2*len(missing_indices)//3], 'income'] = np.nan
+        
+        return data
+        
+    elif dataset_type == "sample_rl_data.csv":
+        # User Behavior Tracking Dataset for RL
+        n_samples = 200
+        
+        # Generate user sessions
+        session_ids = [f'S{str(i+1).zfill(3)}' for i in range(n_samples)]
+        user_ids = [f'U{100 + i//4 + 1}' for i in range(n_samples)]  # Multiple sessions per user
+        
+        # Generate timestamps
+        base_date = pd.Timestamp('2024-01-15')
+        timestamps = [base_date + pd.Timedelta(hours=np.random.randint(0, 240)) for _ in range(n_samples)]
+        
+        action_types = ['pageview', 'click', 'search', 'addtocart', 'purchase', 'bounce', 'remove']
+        action_type = np.random.choice(action_types, n_samples, p=[0.3, 0.25, 0.15, 0.1, 0.05, 0.1, 0.05])
+        
+        pages = ['homepage', 'product_page', 'category_page', 'cart', 'checkout', 'search_results']
+        page_visited = np.random.choice(pages, n_samples, p=[0.3, 0.3, 0.15, 0.1, 0.05, 0.1])
+        
+        time_spent_seconds = np.random.exponential(60, n_samples).astype(int)
+        time_spent_seconds = np.clip(time_spent_seconds, 5, 600)
+        
+        click_count = np.random.poisson(3, n_samples)
+        scroll_depth = np.random.uniform(0.1, 1.0, n_samples).round(2)
+        
+        device_types = ['desktop', 'mobile', 'tablet']
+        device_type = np.random.choice(device_types, n_samples, p=[0.4, 0.5, 0.1])
+        
+        browsers = ['chrome', 'firefox', 'safari', 'edge']
+        browser = np.random.choice(browsers, n_samples, p=[0.5, 0.2, 0.2, 0.1])
+        
+        operating_systems = ['windows', 'mac', 'ios', 'android', 'linux']
+        operating_system = np.random.choice(operating_systems, n_samples, p=[0.4, 0.2, 0.15, 0.2, 0.05])
+        
+        referrer_sources = ['direct', 'google', 'facebook', 'twitter', 'email', 'instagram', 'youtube', 'pinterest', 'tiktok', 'internal']
+        referrer_source = np.random.choice(referrer_sources, n_samples)
+        
+        conversion = np.random.choice([0, 1], n_samples, p=[0.8, 0.2])
+        revenue = np.where(conversion == 1, np.random.uniform(20, 1000, n_samples), 0).astype(int)
+        
+        cart_items = np.random.poisson(1, n_samples)
+        # Fix: Use numpy isin function instead of pandas method
+        cart_items = np.where(np.isin(action_type, ['addtocart', 'purchase', 'cart']), cart_items, 0)
+        
+        search_queries = ['', 'laptop', 'shoes', 'gaming', 'fashion', 'beauty', 'monitors', 'furniture']
+        search_query = np.where(action_type == 'search', 
+                               np.random.choice(search_queries[1:], n_samples), '')
+        
+        product_categories = ['electronics', 'clothing', 'books', 'home_garden', 'sports', 'health', 'toys']
+        product_category = np.random.choice([''] + product_categories, n_samples, p=[0.3] + [0.1]*7)
+        
+        user_rating = np.where(conversion == 1, np.random.uniform(3.0, 5.0, n_samples).round(1), np.nan)
+        
+        repeat_visit = np.random.choice([0, 1], n_samples, p=[0.6, 0.4])
+        session_duration = time_spent_seconds + np.random.randint(0, 300, n_samples)
+        
+        # Create DataFrame
+        data = pd.DataFrame({
+            'session_id': session_ids,
+            'user_id': user_ids,
+            'timestamp': timestamps,
+            'action_type': action_type,
+            'page_visited': page_visited,
+            'time_spent_seconds': time_spent_seconds,
+            'click_count': click_count,
+            'scroll_depth': scroll_depth,
+            'device_type': device_type,
+            'browser': browser,
+            'operating_system': operating_system,
+            'referrer_source': referrer_source,
+            'conversion': conversion,
+            'revenue': revenue,
+            'cart_items': cart_items,
+            'search_query': search_query,
+            'product_category': product_category,
+            'user_rating': user_rating,
+            'repeat_visit': repeat_visit,
+            'session_duration': session_duration
+        })
+        
+        # Add some missing values
+        missing_indices = np.random.choice(n_samples, size=int(n_samples * 0.04), replace=False)
+        data.loc[missing_indices[:len(missing_indices)//2], 'user_id'] = np.nan
+        data.loc[missing_indices[len(missing_indices)//2:], 'referrer_source'] = np.nan
+        
+        return data
+    
+    else:
+        # Default empty dataset
+        return pd.DataFrame()
+
 # Page configuration
 st.set_page_config(
     page_title="DataMind - Auto Data Analysis & Mining",
@@ -375,9 +686,8 @@ def show_upload():
             with col2:
                 if st.button(f"🚀 Load {selected_sample.split()[0]} Dataset", type="primary"):
                     try:
-                        # Load the selected sample dataset
-                        sample_file_path = f"c:\\Users\\GC\\Desktop\\Auto Analis + ML\\{sample_info['file']}"
-                        data = pd.read_csv(sample_file_path)
+                        # Generate sample dataset dynamically based on selection
+                        data = generate_sample_dataset(sample_info['file'])
                         
                         # Store data in session state
                         st.session_state.data = data
@@ -418,13 +728,13 @@ def show_upload():
                         return  # Exit function after loading sample data
                         
                     except Exception as e:
-                        st.error(f"❌ Error loading sample dataset: {str(e)}")
-                        st.info("💡 Make sure all sample data files are in the correct directory.")
+                        st.error(f"❌ Error generating sample dataset: {str(e)}")
+                        st.info("💡 Please try refreshing the page or selecting a different sample dataset.")
         
         # Additional information about sample datasets
         with st.expander("ℹ️ About Sample Datasets"):
             st.markdown("""
-            **These sample datasets are specifically designed to:**
+            **These sample datasets are dynamically generated to:**
             
             - ✅ **Test all DataMind features** - Each dataset contains realistic data quality issues
             - 🧪 **Demonstrate best practices** - Learn proper data analysis workflows
@@ -432,11 +742,14 @@ def show_upload():
             - 📊 **Explore visualizations** - Create meaningful charts and insights
             - 🔍 **Practice data cleaning** - Handle missing values, outliers, and inconsistencies
             
-            **Data Quality Features:**
-            - Missing values in strategic locations
+            **Generated Data Quality Features:**
+            - Missing values in strategic locations (5-8% missing data)
             - Mixed data types (numerical, categorical, text)
-            - Realistic outliers and noise
-            - Typos and inconsistencies for testing cleaning features
+            - Realistic outliers and statistical noise
+            - Varied distributions for comprehensive testing
+            - Cross-platform compatibility (no file dependencies)
+            
+            **🚀 Deployment Ready:** These datasets are generated on-demand and work seamlessly across all platforms!
             """)
     
     # Only process uploaded file if we're in the upload tab and a file is uploaded
